@@ -1,0 +1,1228 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CLI Service 测试工具</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0f0f12;
+            --bg-secondary: #1a1a24;
+            --bg-tertiary: #252530;
+            --accent-primary: #6366f1;
+            --accent-secondary: #8b5cf6;
+            --accent-success: #10b981;
+            --accent-warning: #f59e0b;
+            --accent-error: #ef4444;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --border: #2d2d3a;
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', 'PingFang SC', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* 主布局 */
+        .test-container {
+            display: flex;
+            height: 100vh;
+        }
+
+        /* 左侧：输入区域 */
+        .input-panel {
+            width: 360px;
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .panel-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .panel-header h1 {
+            font-size: 20px;
+            font-weight: 600;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 4px;
+        }
+
+        .panel-header p {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .query-section {
+            padding: 20px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .query-label {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .query-input {
+            width: 100%;
+            padding: 12px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-size: 14px;
+            font-family: inherit;
+            resize: vertical;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .query-input:focus {
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        .quick-commands {
+            margin-top: 16px;
+        }
+
+        .quick-title {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+        }
+
+        .command-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .cmd-btn {
+            padding: 6px 12px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            color: var(--text-secondary);
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .cmd-btn:hover {
+            background: var(--accent-primary);
+            color: white;
+            border-color: var(--accent-primary);
+        }
+
+        .mode-selector {
+            margin-top: 16px;
+            padding: 12px;
+            background: var(--bg-tertiary);
+            border-radius: 12px;
+        }
+
+        .mode-option {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .mode-option:hover {
+            background: var(--bg-primary);
+        }
+
+        .mode-option.active {
+            background: rgba(99, 102, 241, 0.2);
+            border-left: 3px solid var(--accent-primary);
+        }
+
+        .mode-option input {
+            accent-color: var(--accent-primary);
+        }
+
+        .mode-option label {
+            flex: 1;
+            cursor: pointer;
+        }
+
+        .mode-desc {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .execute-btn {
+            margin-top: 20px;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .execute-btn:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .execute-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* 右侧：主输出区域 */
+        .output-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .output-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--bg-primary);
+            z-index: 10;
+        }
+
+        .output-header h2 {
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            background: var(--bg-tertiary);
+            border-radius: 20px;
+            font-size: 12px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--text-muted);
+        }
+
+        .status-dot.running {
+            background: var(--accent-warning);
+            animation: pulse 1s infinite;
+        }
+
+        .status-dot.success {
+            background: var(--accent-success);
+        }
+
+        .status-dot.error {
+            background: var(--accent-error);
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .clear-btn {
+            padding: 6px 12px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .clear-btn:hover {
+            background: var(--accent-error);
+            color: white;
+            border-color: var(--accent-error);
+        }
+
+        /* 主内容区域 - Markdown 流式输出 */
+        .main-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .stream-output {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            min-height: 100%;
+        }
+
+        .stream-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .stream-header svg {
+            width: 20px;
+            height: 20px;
+            color: var(--accent-success);
+        }
+
+        .stream-header span {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        .stream-body {
+            padding: 20px;
+            font-size: 14px;
+            line-height: 1.7;
+            color: var(--text-primary);
+        }
+
+        /* Markdown 样式 */
+        .stream-body h1, .stream-body h2, .stream-body h3,
+        .stream-body h4, .stream-body h5, .stream-body h6 {
+            margin-top: 16px;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .stream-body h1:first-child, .stream-body h2:first-child,
+        .stream-body h3:first-child, .stream-body h4:first-child {
+            margin-top: 0;
+        }
+
+        .stream-body h1 { font-size: 1.8em; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+        .stream-body h2 { font-size: 1.5em; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+        .stream-body h3 { font-size: 1.3em; }
+        .stream-body h4 { font-size: 1.1em; }
+        .stream-body p { margin-bottom: 12px; }
+        .stream-body ul, .stream-body ol { padding-left: 24px; margin-bottom: 12px; }
+        .stream-body li { margin-bottom: 4px; }
+        .stream-body code {
+            background: var(--bg-tertiary);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            font-size: 13px;
+        }
+        .stream-body pre {
+            background: var(--bg-tertiary);
+            padding: 12px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 12px 0;
+        }
+        .stream-body pre code {
+            background: none;
+            padding: 0;
+            font-size: 12px;
+        }
+        .stream-body blockquote {
+            border-left: 3px solid var(--accent-primary);
+            padding-left: 16px;
+            margin: 12px 0;
+            color: var(--text-secondary);
+        }
+        .stream-body table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 12px 0;
+        }
+        .stream-body th, .stream-body td {
+            border: 1px solid var(--border);
+            padding: 8px 12px;
+            text-align: left;
+        }
+        .stream-body th {
+            background: var(--bg-tertiary);
+        }
+        .stream-body a {
+            color: var(--accent-primary);
+            text-decoration: none;
+        }
+        .stream-body a:hover {
+            text-decoration: underline;
+        }
+        .stream-body hr {
+            border: none;
+            border-top: 1px solid var(--border);
+            margin: 16px 0;
+        }
+
+        /* 光标动画 */
+        .cursor {
+            display: inline-block;
+            width: 2px;
+            height: 18px;
+            background: var(--accent-primary);
+            margin-left: 2px;
+            animation: blink 1s infinite;
+            vertical-align: middle;
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        .empty-stream {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 60px 20px;
+        }
+
+        /* 右侧边栏 - 推理流程 */
+        .reasoning-sidebar {
+            width: 380px;
+            background: var(--bg-secondary);
+            border-left: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transform: translateX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .reasoning-sidebar.collapsed {
+            transform: translateX(100%);
+        }
+
+        .sidebar-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .sidebar-header h3 {
+            font-size: 14px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .sidebar-header h3 svg {
+            width: 18px;
+            height: 18px;
+            color: var(--accent-warning);
+        }
+
+        .toggle-sidebar-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        .toggle-sidebar-btn:hover {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        .reasoning-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .reasoning-step {
+            background: var(--bg-tertiary);
+            border-radius: 10px;
+            padding: 12px;
+            border-left: 3px solid var(--accent-primary);
+            animation: slideIn 0.2s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .reasoning-step.plan { border-left-color: var(--accent-primary); }
+        .reasoning-step.execution { border-left-color: var(--accent-success); }
+        .reasoning-step.replan { border-left-color: var(--accent-warning); }
+        .reasoning-step.report { border-left-color: var(--accent-secondary); }
+        .reasoning-step.error { border-left-color: var(--accent-error); }
+
+        .step-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .step-badge {
+            font-size: 10px;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 12px;
+            background: rgba(99, 102, 241, 0.2);
+            color: var(--accent-primary);
+        }
+
+        .step-badge.execution {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--accent-success);
+        }
+
+        .step-badge.replan {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--accent-warning);
+        }
+
+        .step-badge.report {
+            background: rgba(139, 92, 246, 0.2);
+            color: var(--accent-secondary);
+        }
+
+        .step-badge.error {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--accent-error);
+        }
+
+        .step-time {
+            font-size: 10px;
+            color: var(--text-muted);
+        }
+
+        .step-content {
+            font-size: 12px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        .step-content code {
+            background: var(--bg-primary);
+            padding: 2px 4px;
+            border-radius: 4px;
+            font-family: 'SF Mono', monospace;
+            font-size: 11px;
+        }
+
+        .step-content pre {
+            background: var(--bg-primary);
+            padding: 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            overflow-x: auto;
+            margin-top: 8px;
+        }
+
+        .expand-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .expand-btn:hover {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+        }
+
+        .sidebar-resize-handle {
+            position: absolute;
+            left: -4px;
+            top: 0;
+            width: 8px;
+            height: 100%;
+            cursor: ew-resize;
+            background: transparent;
+            z-index: 20;
+        }
+
+        .sidebar-resize-handle:hover {
+            background: rgba(99, 102, 241, 0.3);
+        }
+
+        .reasoning-sidebar {
+            position: relative;
+        }
+
+        /* 滚动条 */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-tertiary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--text-muted);
+            border-radius: 3px;
+        }
+
+        @media (max-width: 900px) {
+            .reasoning-sidebar {
+                position: fixed;
+                right: 0;
+                top: 0;
+                height: 100%;
+                z-index: 100;
+                box-shadow: var(--shadow-lg);
+            }
+        }
+    </style>
+    <!-- Markdown 渲染库 -->
+    <script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"></script>
+    <!-- 代码高亮库 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/atom-one-dark.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/es/highlight.min.js"></script>
+</head>
+<body>
+    <div class="test-container">
+        <!-- 左侧：输入面板 -->
+        <div class="input-panel">
+            <div class="panel-header">
+                <h1>🔧 CLI Service 测试工具</h1>
+                <p>测试智能命令行执行服务</p>
+            </div>
+
+            <div class="query-section">
+                <div>
+                    <div class="query-label">📝 自然语言查询</div>
+                    <textarea id="queryInput" class="query-input" rows="3"
+                        placeholder="例如：帮我查看8004端口是否正在使用"></textarea>
+                </div>
+
+                <div class="quick-commands">
+                    <div class="quick-title">⚡ 快速测试命令</div>
+                    <div class="command-buttons" id="quickCommands">
+                        <button class="cmd-btn" data-query="查看8004端口是否正在使用">🔍 检查端口</button>
+                        <button class="cmd-btn" data-query="查看nginx进程是否在运行">📋 检查进程</button>
+                        <button class="cmd-btn" data-query="检查系统CPU使用情况">💻 CPU检查</button>
+                        <button class="cmd-btn" data-query="查看内存使用情况">🧠 内存检查</button>
+                        <button class="cmd-btn" data-query="查看磁盘使用情况">💾 磁盘检查</button>
+                        <button class="cmd-btn" data-query="显示当前目录下所有文件">📁 列出文件</button>
+                        <button class="cmd-btn" data-query="查看系统当前时间">⏰ 系统时间</button>
+                        <button class="cmd-btn" data-query="查看最近10条系统日志">📜 查看日志</button>
+                    </div>
+                </div>
+
+                <div class="mode-selector">
+                    <div class="query-label">⚙️ 执行模式</div>
+                    <div class="mode-option active" data-mode="auto">
+                        <input type="radio" name="mode" id="modeAuto" value="auto" checked>
+                        <label for="modeAuto">
+                            <div>自动模式</div>
+                            <div class="mode-desc">自动执行所有命令，无需确认</div>
+                        </label>
+                    </div>
+                    <div class="mode-option" data-mode="interactive">
+                        <input type="radio" name="mode" id="modeInteractive" value="interactive">
+                        <label for="modeInteractive">
+                            <div>交互模式</div>
+                            <div class="mode-desc">每个命令执行前需要确认</div>
+                        </label>
+                    </div>
+                </div>
+
+                <button id="executeBtn" class="execute-btn">▶ 执行命令</button>
+            </div>
+        </div>
+
+        <!-- 右侧：主输出区域 -->
+        <div class="output-panel">
+            <div class="output-header">
+                <h2>📡 流式输出 (Markdown)</h2>
+                <div style="display: flex; gap: 12px;">
+                    <div class="status-badge">
+                        <div class="status-dot" id="statusDot"></div>
+                        <span id="statusText">就绪</span>
+                    </div>
+                    <button id="clearBtn" class="clear-btn">清空</button>
+                    <button id="toggleSidebarBtn" class="toggle-sidebar-btn" title="显示/隐藏推理流程">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                            <path d="M4 6H20M4 12H20M4 18H20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            <path d="M16 4L12 12L8 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 主内容：Markdown 流式输出 -->
+            <div class="main-content" id="mainContent">
+                <div class="stream-output" id="streamOutput">
+                    <div class="stream-header">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        <span>执行结果将在这里显示（Markdown 格式）</span>
+                    </div>
+                    <div class="stream-body" id="streamBody">
+                        <div class="empty-stream">⚡ 等待执行命令...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右侧边栏：推理流程 -->
+        <div class="reasoning-sidebar" id="reasoningSidebar">
+            <div class="sidebar-header">
+                <h3>
+                    <svg viewBox="0 0 24 24" fill="none">
+                        <path d="M9.5 2L13 5.5M9.5 2L6 5.5M9.5 2V22M15.5 22L12 18.5M15.5 22L19 18.5M15.5 22V2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    推理流程
+                </h3>
+                <div style="display: flex; gap: 8px;">
+                    <button id="clearReasoningBtn" class="expand-btn" title="清空推理记录">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                            <path d="M4 7H20M10 11V17M14 11V17M5 7L6 19C6 20.1 6.9 21 8 21H16C17.1 21 18 20.1 18 19L19 7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                    </button>
+                    <button id="closeSidebarBtn" class="toggle-sidebar-btn" title="关闭">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                            <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div class="reasoning-content" id="reasoningContent">
+                <div style="text-align: center; color: var(--text-muted); padding: 20px;">
+                    🤔 等待执行命令...<br>
+                    推理过程将在这里显示
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 配置 Marked
+        if (typeof marked !== 'undefined') {
+            marked.setOptions({
+                breaks: true,
+                gfm: true,
+                headerIds: false,
+                mangle: false
+            });
+        }
+
+        class CLIServiceTester {
+            constructor() {
+                this.apiBaseUrl = 'http://localhost:9900/api';
+                this.sessionId = this.generateSessionId();
+                this.isExecuting = false;
+                this.currentStreamContent = '';
+                this.reasoningSteps = [];
+
+                this.initElements();
+                this.bindEvents();
+                this.initResize();
+                this.initMarked();
+            }
+
+            initElements() {
+                this.queryInput = document.getElementById('queryInput');
+                this.executeBtn = document.getElementById('executeBtn');
+                this.clearBtn = document.getElementById('clearBtn');
+                this.statusDot = document.getElementById('statusDot');
+                this.statusText = document.getElementById('statusText');
+                this.streamBody = document.getElementById('streamBody');
+                this.reasoningContent = document.getElementById('reasoningContent');
+                this.reasoningSidebar = document.getElementById('reasoningSidebar');
+                this.toggleSidebarBtn = document.getElementById('toggleSidebarBtn');
+                this.closeSidebarBtn = document.getElementById('closeSidebarBtn');
+                this.clearReasoningBtn = document.getElementById('clearReasoningBtn');
+
+                this.getSelectedMode = () => {
+                    const autoRadio = document.getElementById('modeAuto');
+                    return autoRadio && autoRadio.checked ? 'auto' : 'interactive';
+                };
+            }
+
+            bindEvents() {
+                this.executeBtn.addEventListener('click', () => this.executeCLI());
+                this.clearBtn.addEventListener('click', () => this.clearAll());
+                this.toggleSidebarBtn.addEventListener('click', () => this.toggleSidebar());
+                this.closeSidebarBtn.addEventListener('click', () => this.toggleSidebar());
+                this.clearReasoningBtn.addEventListener('click', () => this.clearReasoning());
+
+                document.querySelectorAll('.cmd-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const query = btn.getAttribute('data-query');
+                        if (query) this.queryInput.value = query;
+                    });
+                });
+
+                document.querySelectorAll('.mode-option').forEach(opt => {
+                    opt.addEventListener('click', () => {
+                        const radio = opt.querySelector('input');
+                        if (radio) radio.checked = true;
+                        document.querySelectorAll('.mode-option').forEach(o => o.classList.remove('active'));
+                        opt.classList.add('active');
+                    });
+                });
+            }
+
+            initMarked() {
+                // 配置 marked 和 highlight
+                if (typeof marked !== 'undefined' && typeof hljs !== 'undefined') {
+                    marked.setOptions({
+                        highlight: function(code, lang) {
+                            if (lang && hljs.getLanguage(lang)) {
+                                try {
+                                    return hljs.highlight(code, { language: lang }).value;
+                                } catch (err) {
+                                    console.error('代码高亮失败:', err);
+                                }
+                            }
+                            return code;
+                        }
+                    });
+                }
+            }
+
+            initResize() {
+                let startX, startWidth;
+                const handle = document.createElement('div');
+                handle.className = 'sidebar-resize-handle';
+                this.reasoningSidebar.appendChild(handle);
+
+                handle.addEventListener('mousedown', (e) => {
+                    startX = e.clientX;
+                    startWidth = parseInt(window.getComputedStyle(this.reasoningSidebar).width, 10);
+                    document.body.style.cursor = 'ew-resize';
+                    document.body.style.userSelect = 'none';
+
+                    const onMouseMove = (moveEvent) => {
+                        const newWidth = startWidth - (moveEvent.clientX - startX);
+                        if (newWidth >= 280 && newWidth <= 600) {
+                            this.reasoningSidebar.style.width = newWidth + 'px';
+                        }
+                    };
+
+                    const onMouseUp = () => {
+                        document.removeEventListener('mousemove', onMouseMove);
+                        document.removeEventListener('mouseup', onMouseUp);
+                        document.body.style.cursor = '';
+                        document.body.style.userSelect = '';
+                    };
+
+                    document.addEventListener('mousemove', onMouseMove);
+                    document.addEventListener('mouseup', onMouseUp);
+                    e.preventDefault();
+                });
+            }
+
+            toggleSidebar() {
+                this.reasoningSidebar.classList.toggle('collapsed');
+            }
+
+            clearReasoning() {
+                this.reasoningSteps = [];
+                this.reasoningContent.innerHTML = `
+                    <div style="text-align: center; color: var(--text-muted); padding: 20px;">
+                        🤔 推理记录已清空
+                    </div>
+                `;
+            }
+
+            clearAll() {
+                this.currentStreamContent = '';
+                this.streamBody.innerHTML = '<div class="empty-stream">⚡ 等待执行命令...</div>';
+                this.clearReasoning();
+                this.updateStatus('就绪', false);
+            }
+
+            generateSessionId() {
+                return 'test_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            }
+
+            getCurrentTime() {
+                return new Date().toLocaleTimeString('zh-CN', { hour12: false });
+            }
+
+            // 渲染 Markdown
+            renderMarkdown(content) {
+                if (!content) return '';
+                if (typeof marked !== 'undefined') {
+                    try {
+                        return marked.parse(content);
+                    } catch(e) {
+                        console.error('Markdown 渲染失败:', e);
+                        return `<pre>${this.escapeHtml(content)}</pre>`;
+                    }
+                }
+                return `<pre>${this.escapeHtml(content)}</pre>`;
+            }
+
+            // 高亮代码块
+            highlightCodeBlocks(container) {
+                if (typeof hljs !== 'undefined' && container) {
+                    container.querySelectorAll('pre code').forEach((block) => {
+                        if (!block.classList.contains('hljs')) {
+                            hljs.highlightElement(block);
+                        }
+                    });
+                }
+            }
+
+            // 更新主内容流式输出（Markdown 格式）
+            updateStreamContent(content, showCursor = true) {
+                this.currentStreamContent = content;
+
+                if (this.streamBody.querySelector('.empty-stream')) {
+                    this.streamBody.innerHTML = '';
+                }
+
+                let renderContent = content;
+                if (showCursor) {
+                    renderContent = content + '<span class="cursor"></span>';
+                }
+
+                const html = this.renderMarkdown(renderContent);
+                this.streamBody.innerHTML = html;
+                this.highlightCodeBlocks(this.streamBody);
+                this.scrollToBottom();
+            }
+
+            // 添加推理步骤到侧边栏
+            addReasoningStep(eventData) {
+                // 移除空状态
+                if (this.reasoningContent.children.length === 1 &&
+                    this.reasoningContent.children[0].innerHTML.includes('等待执行命令')) {
+                    this.reasoningContent.innerHTML = '';
+                }
+
+                let stepClass = 'plan';
+                let badgeText = '📋 计划';
+                let displayContent = '';
+
+                // 添加调试日志
+                if (eventData.type === 'replan') {
+                    console.log('[replan 事件]', {
+                        type: eventData.type,
+                        plan: eventData.plan,
+                        plan_length: eventData.plan?.length,
+                        replan_count: eventData.replan_count,
+                        remaining_commands: eventData.remaining_commands,
+                        message: eventData.message
+                    });
+                }
+
+                switch(eventData.type) {
+                    case 'plan':
+                        stepClass = 'plan';
+                        badgeText = '📋 计划';
+                        const planCount = (eventData.plan || []).length;
+                        displayContent = `生成了 ${planCount} 个命令的计划`;
+                        if (eventData.plan && eventData.plan.length) {
+                            const showCommands = eventData.plan.slice(0, 5);
+                            displayContent += `:<br>${showCommands.map((c, i) => `<code>${i+1}. ${this.escapeHtml(c.substring(0, 80))}${c.length > 80 ? '...' : ''}</code>`).join('<br>')}`;
+                            if (eventData.plan.length > 5) {
+                                displayContent += `<br><span style="color: var(--text-muted);">... 还有 ${eventData.plan.length - 5} 个命令</span>`;
+                            }
+                        }
+                        break;
+
+                    case 'execution':
+                        stepClass = 'execution';
+                        badgeText = '⚡ 执行';
+                        displayContent = `<strong>命令:</strong> <code>${this.escapeHtml(eventData.command || '')}</code><br>`;
+                        const resultPreview = (eventData.result || '').substring(0, 200);
+                        displayContent += `<strong>结果:</strong> <pre style="margin-top: 4px; font-size: 11px; max-height: 150px; overflow: auto;">${this.escapeHtml(resultPreview)}${(eventData.result || '').length > 200 ? '...' : ''}</pre>`;
+                        break;
+
+                    case 'replan':
+                        stepClass = 'replan';
+                        badgeText = '🔄 重规划';
+                        // 根据 cli_service.py，replan 事件包含 plan、replan_count、remaining_commands
+                        const newPlan = eventData.plan || [];
+                        const replanCount = eventData.replan_count || 0;
+                        const remainingCmds = eventData.remaining_commands || 0;
+
+                        if (newPlan.length > 0) {
+                            // 重新规划后生成了新命令
+                            displayContent = `第 ${replanCount} 次重新规划，生成了 ${newPlan.length} 个新命令`;
+                            const showNewCommands = newPlan.slice(0, 3);
+                            displayContent += `:<br>${showNewCommands.map((c, i) => `<code>${i+1}. ${this.escapeHtml(c.substring(0, 60))}${c.length > 60 ? '...' : ''}</code>`).join('<br>')}`;
+                            if (newPlan.length > 3) {
+                                displayContent += `<br><span style="color: var(--text-muted);">... 还有 ${newPlan.length - 3} 个命令</span>`;
+                            }
+                        } else if (remainingCmds > 0) {
+                            // 没有新命令列表，但有剩余命令数（继续执行）
+                            displayContent = `不需要重新规划，继续执行剩余 ${remainingCmds} 个命令`;
+                        } else {
+                            // 继续执行
+                            displayContent = `不需要重新规划，${eventData.message || '继续执行'}`;
+                        }
+                        break;
+
+                    case 'report':
+                        stepClass = 'report';
+                        badgeText = '📄 报告';
+                        displayContent = `生成最终报告`;
+                        break;
+
+                    case 'complete':
+                        stepClass = 'report';
+                        badgeText = '✅ 完成';
+                        const summary = eventData.summary || {};
+                        displayContent = `任务执行完成，共执行 ${summary.total_commands || 0} 个命令，成功 ${summary.success_count || 0} 个`;
+                        break;
+
+                    case 'error':
+                        stepClass = 'error';
+                        badgeText = '❌ 错误';
+                        displayContent = eventData.message || '未知错误';
+                        break;
+
+                    default:
+                        stepClass = 'plan';
+                        badgeText = '📌 信息';
+                        displayContent = JSON.stringify(eventData).substring(0, 200);
+                }
+
+                const step = document.createElement('div');
+                step.className = `reasoning-step ${stepClass}`;
+
+                let badgeExtraClass = '';
+                if (stepClass === 'execution') badgeExtraClass = 'execution';
+                else if (stepClass === 'replan') badgeExtraClass = 'replan';
+                else if (stepClass === 'report') badgeExtraClass = 'report';
+                else if (stepClass === 'error') badgeExtraClass = 'error';
+
+                step.innerHTML = `
+                    <div class="step-header">
+                        <span class="step-badge ${badgeExtraClass}">${badgeText}</span>
+                        <span class="step-time">${this.getCurrentTime()}</span>
+                    </div>
+                    <div class="step-content">${displayContent}</div>
+                `;
+
+                this.reasoningContent.appendChild(step);
+                this.scrollReasoningToBottom();
+            }
+
+            scrollReasoningToBottom() {
+                if (this.reasoningContent) {
+                    this.reasoningContent.scrollTop = this.reasoningContent.scrollHeight;
+                }
+            }
+
+            scrollToBottom() {
+                const mainContent = document.querySelector('.main-content');
+                if (mainContent) {
+                    mainContent.scrollTop = mainContent.scrollHeight;
+                }
+            }
+
+            escapeHtml(text) {
+                if (!text) return '';
+                return text
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#39;');
+            }
+
+            updateStatus(status, isRunning = false) {
+                this.statusText.textContent = status;
+                if (isRunning) {
+                    this.statusDot.className = 'status-dot running';
+                } else if (status === '完成') {
+                    this.statusDot.className = 'status-dot success';
+                } else if (status === '错误') {
+                    this.statusDot.className = 'status-dot error';
+                } else {
+                    this.statusDot.className = 'status-dot';
+                }
+            }
+
+            async executeCLI() {
+                if (this.isExecuting) {
+                    this.showNotification('请等待当前执行完成', 'warning');
+                    return;
+                }
+
+                const query = this.queryInput.value.trim();
+                if (!query) {
+                    this.showNotification('请输入查询内容', 'warning');
+                    return;
+                }
+
+                const mode = this.getSelectedMode();
+                this.isExecuting = true;
+                this.executeBtn.disabled = true;
+                this.updateStatus('执行中...', true);
+
+                // 清空之前的输出
+                this.currentStreamContent = '';
+                this.clearAll();
+
+                try {
+                    const response = await fetch(`${this.apiBaseUrl}/cli`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            user_input: query,
+                            session_id: this.sessionId,
+                            auto_mode: mode === 'auto'
+                        })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP错误: ${response.status}`);
+                    }
+
+                    const reader = response.body.getReader();
+                    const decoder = new TextDecoder();
+                    let buffer = '';
+                    let lastReportContent = '';
+
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+
+                        buffer += decoder.decode(value, { stream: true });
+                        const lines = buffer.split('\n');
+                        buffer = lines.pop() || '';
+
+                        for (const line of lines) {
+                            const trimmed = line.trim();
+                            if (!trimmed || !trimmed.startsWith('data:')) continue;
+
+                            const dataStr = trimmed.substring(5).trim();
+                            try {
+                                const event = JSON.parse(dataStr);
+
+                                // 添加到推理侧边栏
+                                this.addReasoningStep(event);
+
+                                // 处理主内容流式输出
+                                if (event.type === 'report') {
+                                    // report 事件流式更新
+                                    lastReportContent = event.report || '';
+                                    this.updateStreamContent(lastReportContent, true);
+                                } else if (event.type === 'complete') {
+                                    // 完成时，移除光标，显示完整内容
+                                    if (event.response) {
+                                        this.updateStreamContent(event.response, false);
+                                    } else if (lastReportContent) {
+                                        this.updateStreamContent(lastReportContent, false);
+                                    }
+                                    this.updateStatus('完成', false);
+                                } else if (event.type === 'error') {
+                                    this.updateStreamContent(`**❌ 错误:** ${event.message}`, false);
+                                    this.updateStatus('错误', false);
+                                }
+                            } catch (e) {
+                                console.warn('解析事件失败:', dataStr, e);
+                            }
+                        }
+                    }
+
+                } catch (error) {
+                    console.error('CLI执行失败:', error);
+                    this.addReasoningStep({
+                        type: 'error',
+                        message: error.message
+                    });
+                    this.updateStreamContent(`**❌ 执行失败:** ${error.message}`, false);
+                    this.updateStatus('错误', false);
+                    this.showNotification('执行失败: ' + error.message, 'error');
+                } finally {
+                    this.isExecuting = false;
+                    this.executeBtn.disabled = false;
+                }
+            }
+
+            showNotification(message, type = 'info') {
+                const notification = document.createElement('div');
+                notification.textContent = message;
+                notification.style.cssText = `
+                    position: fixed;
+                    bottom: 20px;
+                    left: 380px;
+                    padding: 12px 20px;
+                    background: ${type === 'error' ? '#ef4444' : type === 'warning' ? '#f59e0b' : '#10b981'};
+                    color: white;
+                    border-radius: 8px;
+                    font-size: 14px;
+                    z-index: 1000;
+                    animation: fadeIn 0.3s ease;
+                `;
+                document.body.appendChild(notification);
+                setTimeout(() => notification.remove(), 3000);
+            }
+        }
+
+        // 添加动画样式
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes fadeIn {
+                from { opacity: 0; transform: translateY(10px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            window.tester = new CLIServiceTester();
+        });
+    </script>
+</body>
+</html>
