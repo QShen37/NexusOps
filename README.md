@@ -101,6 +101,7 @@ NexusOps/
 
 ### 系统要求
 - Python 3.13+
+- conda 环境
 - pip 包管理器
 
 ### 安装步骤
@@ -111,12 +112,20 @@ git clone https://github.com/QShen37/NexusOps.git
 cd NexusOps
 ```
 
-2. **安装依赖**
+2. **虚拟环境配置（需要保证电脑有Minicoda）**
+
 ```bash
-pip install -r requirements.txt
+conda create -n nexus_ops python=3.13
+conda activate nexus_ops
 ```
 
-3. **执行方式**
+
+3. **安装依赖**
+```bash
+pip install -r requirement.txt
+```
+
+4. **执行方式**
 ```bash
 # 启动3个server
 python .\mcp_server\cls_server.py
