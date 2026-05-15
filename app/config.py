@@ -55,6 +55,10 @@ class Settings(BaseSettings):
     mcp_monitor_url: str = "http://127.0.0.1:8004/mcp"
     mcp_system_transport: str = "streamable-http"
     mcp_system_url: str = "http://127.0.0.1:8005/mcp"
+    mcp_docker_transport: str = "streamable-http"
+    mcp_docker_url: str = "http://127.0.0.1:8006/mcp"
+    mcp_network_transport: str = "streamable-http"
+    mcp_network_url: str = "http://127.0.0.1:8007/mcp"
 
     @property
     def mcp_server(self) -> Dict[str, Dict[str, Any]]:
@@ -71,6 +75,14 @@ class Settings(BaseSettings):
             "system": {
                 "transport": self.mcp_system_transport,
                 "url": self.mcp_system_url,
+            },
+            "docker": {
+                "transport": self.mcp_docker_transport,
+                "url": self.mcp_docker_url,
+            },
+            "network": {
+                "transport": self.mcp_network_transport,
+                "url": self.mcp_network_url,
             }
         }
 
