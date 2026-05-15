@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     port: int = 9900
 
     # API配置
-    DEEPSEEK_API_KEY: str = ""
+    DEEPSEEK_API_KEY: str = "sk-582412a410e44bf0b431d30b5aa21f63"
     DEEPSEEK_BASE_URL: str = "https://api.deepseek.com"
     DEEPSEEk_MODEL: str = "deepseek-chat"
     EMBEDDING_MODEL: str = "all-MiniLM-L6-v2"
