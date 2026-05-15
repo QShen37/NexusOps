@@ -144,4 +144,4 @@ python -m uvicorn app.main:app --host 127.0.0.1 --port 9900
 
 ## 待办事项
 - 将cli确认转移到前端
-- skills实现
+- ~~skills实现（已完成）~~

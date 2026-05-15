@@ -22,6 +22,7 @@ from typing_extensions import TypedDict
 from app.config import config
 from app.tools import get_current_time, retrieve_knowledge
 from app.agent.mcp_client import get_mcp_client_with_retry
+from app.agent.aiops.skill_manager import SkillManager, Skill
 
 class AgentState(TypedDict):
     """ Agent 状态 """
@@ -76,6 +77,12 @@ class RAGAgentService:
         """
         self.model_name = config.rag_model
         self.streaming = streaming
+
+        # 自动发现 skills (单例 SkillManager 会扫描 ./skills/*/SKILL.md)
+        self.skill_manager = SkillManager()
+        skills_count = len(self.skill_manager.get_all_skills())
+        logger.info(f"RAG Agent 自动发现 {skills_count} 个 Skills")
+
         self.system_prompt = self._build_system_prompt()
 
         self.model = ChatDeepSeek(
@@ -133,7 +140,7 @@ class RAGAgentService:
 
     def _build_system_prompt(self) -> str:
         """
-        构建系统提示词
+        构建基础系统提示词 (带已发现 Skills 概览)
 
         注意：LangChain 框架会自动将工具信息传递给 LLM，
         因此系统提示词中无需列举具体的工具列表。
@@ -143,7 +150,7 @@ class RAGAgentService:
         """
         from textwrap import dedent
 
-        return dedent("""
+        base = dedent("""
             你是一个专业的AI助手，能够使用多种工具来帮助用户解决问题。
 
             工作原则:
@@ -160,6 +167,55 @@ class RAGAgentService:
 
             请根据用户的问题，灵活使用可用工具，提供高质量的帮助。
         """).strip()
+
+        # 把自动发现的 Skills 概览拼进 system prompt
+        skills = self.skill_manager.get_all_skills()
+        if not skills:
+            return base
+
+        skills_summary = self.skill_manager.get_skills_summary()
+        skill_block = dedent(f"""
+
+            ## 可用的运维 Skills (自动发现)
+            以下 Skills 来自 ./skills/*/SKILL.md, 当用户问题涉及对应场景时, 优先按 Skill 的 Playbook 流程处理:
+            {skills_summary}
+        """).strip()
+
+        return base + "\n\n" + skill_block
+
+    def _build_query_system_prompt(self, question: str) -> str:
+        """
+        根据用户问题动态匹配 Skill, 拼出本次 query 专用的 system prompt
+        若没匹配到 Skill, 回退到 self.system_prompt
+        """
+        from textwrap import dedent
+
+        skill: Skill = self.skill_manager.match_skill(question)
+        if not skill:
+            return self.system_prompt
+
+        logger.info(
+            f"匹配到 Skill: {skill.display_name} ({skill.name}), "
+            f"风险等级: {skill.risk_level}"
+        )
+
+        skill_block = dedent(f"""
+
+            ## 当前匹配的 Skill 上下文
+            - **Skill**: {skill.display_name} ({skill.name})
+            - **风险等级**: {skill.risk_level}
+            - **推荐工具**: {', '.join(skill.allowed_tools[:10]) if skill.allowed_tools else '无限制'}
+
+            ## Skill Playbook (请按此流程处理本次问题)
+            {skill.content}
+
+            ## Skill 执行约束
+            - 优先选择 Playbook 中提到的工具
+            - 严格遵守 Playbook 中的注意事项 (如生产环境慎重启、写操作风险提示等)
+            - 风险等级为 high 的写操作要先在结果中给出警告
+        """).strip()
+
+        return self.system_prompt + "\n\n" + skill_block
 
     async def query(
             self,
@@ -181,9 +237,12 @@ class RAGAgentService:
 
             logger.info(f"[会话 {session_id}] RAG Agent 收到查询（非流式）: {question}")
 
+            # 按问题动态匹配 Skill, 构建带 Playbook 的 system prompt
+            dynamic_system_prompt = self._build_query_system_prompt(question)
+
             # 构建消息列表（系统提示 + 用户问题）
             messages = [
-                SystemMessage(content=self.system_prompt),
+                SystemMessage(content=dynamic_system_prompt),
                 HumanMessage(content=question),
             ]
 
@@ -244,9 +303,12 @@ class RAGAgentService:
 
             logger.info(f"[会话 {session_id}] RAG Agent 收到查询（流式）: {question}")
 
+            # 按问题动态匹配 Skill, 构建带 Playbook 的 system prompt
+            dynamic_system_prompt = self._build_query_system_prompt(question)
+
             # 构建消息列表（系统提示 + 用户问题）
             messages = [
-                SystemMessage(content=self.system_prompt),
+                SystemMessage(content=dynamic_system_prompt),
                 HumanMessage(content=question)
             ]
 

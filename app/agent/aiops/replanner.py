@@ -16,6 +16,37 @@ from app.agent.mcp_client import get_mcp_client_with_retry
 from .state import PlanExecuteState
 from .utils import format_tools_description
 
+
+def _build_skill_context_block(state: PlanExecuteState) -> str:
+    """从 state 提取共享 skill 上下文, 拼成给 LLM 看的提示块
+
+    若 planner 没匹配到 skill, 返回空字符串
+    """
+    matched_skill = state.get("matched_skill")
+    if not matched_skill:
+        return ""
+
+    skill_display_name = state.get("skill_display_name") or matched_skill
+    skill_risk_level = state.get("skill_risk_level") or "unknown"
+    skill_allowed_tools = state.get("skill_allowed_tools") or []
+    skill_playbook = state.get("skill_playbook") or "(此 Skill 未提供 Playbook)"
+
+    return dedent(f"""
+
+        ## 当前匹配的 Skill 上下文 (与 Planner / Executor 共享)
+        - **Skill**: {skill_display_name} ({matched_skill})
+        - **风险等级**: {skill_risk_level}
+        - **推荐工具**: {', '.join(skill_allowed_tools[:10]) if skill_allowed_tools else '无限制'}
+
+        ## Skill Playbook (重新规划时的参考)
+        {skill_playbook}
+
+        ## Skill 重规划约束
+        - 新步骤应继续遵循 Playbook 的 Phase 顺序
+        - 不要引入 Playbook 之外、风险更高的写操作
+        - 若已收集到 Playbook 各 Phase 的关键信息, 优先 respond 而不是 replan
+    """).strip()
+
 class Response(BaseModel):
     """最终响应的格式"""
     response: str = Field(description="对用户的最终响应")
@@ -45,6 +76,8 @@ replanner_prompt = ChatPromptTemplate.from_messages(
                 可用工具列表（用于制定计划时参考）：
 
                 {tools_description}
+
+                {skill_context}
 
                 注意：你的职责是制定或调整计划，实际的工具调用由 Executor 负责执行。
 
@@ -132,6 +165,12 @@ async def replanner(state: PlanExecuteState) -> Dict[str, Any]:
     logger.info(f"剩余计划步骤: {len(plan)}")
     logger.info(f"已执行步骤: {executed_count}")
 
+    # 读取由 planner 注入的共享 skill 状态
+    matched_skill = state.get("matched_skill")
+    if matched_skill:
+        logger.info(f"📌 使用共享 Skill 状态: {matched_skill}")
+    skill_context = _build_skill_context_block(state)
+
     # ⚠️ 强制限制 1：如果已执行步骤 < 3，禁止 respond
     MIN_EXECUTED_STEPS = 3
     if executed_count < MIN_EXECUTED_STEPS:
@@ -206,7 +245,8 @@ async def replanner(state: PlanExecuteState) -> Dict[str, Any]:
 
             act = await replanner_chain.ainvoke({
                 "messages": messages,
-                "tools_description": tools_description
+                "tools_description": tools_description,
+                "skill_context": skill_context,
             })
 
             # 处理返回结果
@@ -288,12 +328,15 @@ async def replanner(state: PlanExecuteState) -> Dict[str, Any]:
 
 
 async def _generate_response(state: PlanExecuteState, llm: ChatDeepSeek) -> Dict[str, Any]:
-    """生成最终响应"""
+    """生成最终响应 - 会带上共享 skill 上下文, 让响应风格与 Skill Playbook 对齐"""
     logger.info("生成最终响应...")
 
     input_text = state.get("input", "")
     past_steps = state.get("past_steps", [])
     executed_count = len(past_steps)
+    matched_skill = state.get("matched_skill")
+    skill_display_name = state.get("skill_display_name") or matched_skill
+    skill_risk_level = state.get("skill_risk_level")
 
     # 安全检查：确保至少执行了 3 个步骤
     MIN_EXECUTED_STEPS = 3
@@ -315,8 +358,16 @@ async def _generate_response(state: PlanExecuteState, llm: ChatDeepSeek) -> Dict
         messages = [
             ("user", f"原始任务: {input_text}"),
             ("user", f"执行历史:\n{execution_history}"),
-            ("user", "请基于以上信息生成全面的最终响应")
         ]
+        # 若有共享 skill 状态, 一并喂给最终响应生成
+        if matched_skill:
+            messages.append((
+                "user",
+                f"本次诊断使用的 Skill: {skill_display_name} ({matched_skill}), "
+                f"风险等级: {skill_risk_level or 'unknown'}. "
+                "请在结论中体现该 Skill 的 Phase 结构与处置建议."
+            ))
+        messages.append(("user", "请基于以上信息生成全面的最终响应"))
 
         response_obj = await response_gen.ainvoke({"messages": messages})
 
