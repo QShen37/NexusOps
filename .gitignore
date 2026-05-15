@@ -17,3 +17,5 @@ manager/logs/
 manager/volumes/etcd/
 manager/volumes/milvus/
 manager/volumes/minio/
+
+app/config.py
