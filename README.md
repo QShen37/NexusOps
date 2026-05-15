@@ -143,5 +143,7 @@ python -m uvicorn app.main:app --host 127.0.0.1 --port 9900
 - 数据文件需放置在指定目录或者根据页面交互上传
 
 ## 待办事项
-- 将cli确认转移到前端
+- rag添加rewrite和hybrid混合索引以及ragas测评
+- rag添加图片以及pdf检索
+- ~~将cli确认转移到前端~~
 - ~~skills实现（已完成）~~

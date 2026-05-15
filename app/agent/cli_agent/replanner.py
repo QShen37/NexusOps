@@ -42,6 +42,37 @@ class CLIResponse(BaseModel):
     suggestions: Optional[str] = Field(default=None, description="如果发现问题，提供建议")
 
 
+def _build_cli_skill_context_block(state: PlanExecuteState) -> str:
+    """从 state 提取共享 skill 上下文, 拼成给 LLM 看的提示块
+
+    若 planner 没匹配到 skill, 返回空字符串
+    """
+    matched_skill = state.get("matched_skill")
+    if not matched_skill:
+        return ""
+
+    skill_display_name = state.get("skill_display_name") or matched_skill
+    skill_risk_level = state.get("skill_risk_level") or "unknown"
+    skill_allowed_tools = state.get("skill_allowed_tools") or []
+    skill_playbook = state.get("skill_playbook") or "(此 Skill 未提供 Playbook)"
+
+    return dedent(f"""
+
+        ## 当前匹配的 Skill 上下文 (与 Planner / Executor 共享)
+        - **Skill**: {skill_display_name} ({matched_skill})
+        - **风险等级**: {skill_risk_level}
+        - **推荐工具**: {', '.join(skill_allowed_tools[:10]) if skill_allowed_tools else '无限制'}
+
+        ## Skill Playbook (重新规划时的参考)
+        {skill_playbook}
+
+        ## Skill 重规划约束
+        - 新命令应继续遵循 Playbook 的 Phase 顺序
+        - 不要引入 Playbook 之外、风险更高的写操作
+        - 若已收集到 Playbook 各 Phase 的关键信息, 优先 respond 而不是 replan
+    """).strip()
+
+
 # CLI Replanner 提示词
 cli_replanner_prompt = ChatPromptTemplate.from_messages(
     [
@@ -52,6 +83,8 @@ cli_replanner_prompt = ChatPromptTemplate.from_messages(
 
                 ## 可用工具
                 {tools_description}
+
+                {skill_context}
 
                 ## 决策规则
 
@@ -201,6 +234,12 @@ async def cli_replanner(state: PlanExecuteState) -> Dict[str, Any]:
     logger.info(f"已执行命令数: {len(past_steps)}")
     logger.info(f"重新规划次数: {replan_count}")
 
+    # 读取由 planner 注入的共享 skill 状态
+    matched_skill = state.get("matched_skill")
+    if matched_skill:
+        logger.info(f"📌 使用共享 Skill 状态: {matched_skill}")
+    skill_context_block = _build_cli_skill_context_block(state)
+
     # ========== 强制结束条件 ==========
 
     # 条件1：已执行命令过多，强制生成响应
@@ -286,7 +325,8 @@ async def cli_replanner(state: PlanExecuteState) -> Dict[str, Any]:
 
         act = await replanner_chain.ainvoke({
             "messages": decision_messages,
-            "tools_description": tools_description
+            "tools_description": tools_description,
+            "skill_context": skill_context_block,
         })
 
         # 处理返回结果
@@ -401,8 +441,21 @@ async def _generate_cli_response(state: PlanExecuteState, llm: ChatDeepSeek) -> 
             ("user", f"用户问题: {input_text}"),
             ("user", f"执行了 {len(past_steps)} 个命令（成功 {success_count} 个，失败 {fail_count} 个）"),
             ("user", f"执行详情:\n{chr(10).join(execution_details)}{remaining_info}"),
-            ("user", "请根据以上信息生成最终响应")
         ]
+
+        # 若有共享 skill 状态, 喂给最终响应生成
+        matched_skill = state.get("matched_skill")
+        if matched_skill:
+            skill_display_name = state.get("skill_display_name") or matched_skill
+            skill_risk_level = state.get("skill_risk_level") or "unknown"
+            messages.append((
+                "user",
+                f"本次诊断使用的 Skill: {skill_display_name} ({matched_skill}), "
+                f"风险等级: {skill_risk_level}. "
+                "请在结论中体现该 Skill 的 Phase 结构与处置建议."
+            ))
+
+        messages.append(("user", "请根据以上信息生成最终响应"))
 
         response_obj = await response_chain.ainvoke({"messages": messages})
 

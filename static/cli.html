@@ -620,6 +620,246 @@
                 box-shadow: var(--shadow-lg);
             }
         }
+
+        /* ====== 命令确认 Modal ====== */
+        .confirm-modal-mask {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(5, 5, 10, 0.72);
+            -webkit-backdrop-filter: blur(4px);
+            backdrop-filter: blur(4px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 99999;
+        }
+
+        .confirm-modal-mask.active {
+            display: flex !important;
+        }
+
+        /* ====== 行内确认面板(modal 同时也会内联在主视图, 双保险) ====== */
+        .inline-confirm {
+            display: none;
+            margin: 16px 0;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.08));
+            border: 1px solid var(--accent-primary);
+            border-radius: 14px;
+            padding: 16px 18px;
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.08);
+        }
+
+        .inline-confirm.visible {
+            display: block;
+            animation: slideIn 0.2s ease;
+        }
+
+        .inline-confirm-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--accent-primary);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .inline-confirm-cmd {
+            background: var(--bg-primary);
+            border-radius: 8px;
+            padding: 10px 12px;
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            font-size: 13px;
+            margin: 8px 0;
+            word-break: break-all;
+            white-space: pre-wrap;
+        }
+
+        .inline-confirm-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .confirm-modal {
+            width: min(600px, 92vw);
+            max-height: 86vh;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            box-shadow: var(--shadow-lg);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .confirm-modal-header {
+            padding: 18px 22px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .confirm-modal-title {
+            font-size: 16px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .confirm-modal-step {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .confirm-modal-body {
+            padding: 18px 22px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .confirm-block-label {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+
+        .confirm-command-box {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px 14px;
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            font-size: 13px;
+            color: var(--text-primary);
+            word-break: break-all;
+            white-space: pre-wrap;
+        }
+
+        .confirm-edit-input {
+            width: 100%;
+            padding: 10px 12px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            font-size: 13px;
+            outline: none;
+            resize: vertical;
+            min-height: 64px;
+            display: none;
+        }
+
+        .confirm-edit-input.visible {
+            display: block;
+        }
+
+        .confirm-edit-input:focus {
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+        }
+
+        .confirm-warning {
+            padding: 10px 12px;
+            border-radius: 10px;
+            font-size: 12px;
+            line-height: 1.5;
+            background: rgba(245, 158, 11, 0.12);
+            border-left: 3px solid var(--accent-warning);
+            color: #fbbf24;
+            display: none;
+        }
+
+        .confirm-warning.dangerous {
+            background: rgba(239, 68, 68, 0.12);
+            border-left-color: var(--accent-error);
+            color: #fca5a5;
+        }
+
+        .confirm-warning.visible {
+            display: block;
+        }
+
+        .confirm-meta {
+            font-size: 12px;
+            color: var(--text-muted);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+        }
+
+        .confirm-meta-item strong {
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .confirm-modal-footer {
+            padding: 14px 22px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: flex-end;
+            background: var(--bg-primary);
+        }
+
+        .confirm-btn {
+            padding: 9px 16px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .confirm-btn:hover {
+            transform: translateY(-1px);
+        }
+
+        .confirm-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .confirm-btn.primary {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            border-color: transparent;
+            color: white;
+        }
+
+        .confirm-btn.warning {
+            border-color: var(--accent-warning);
+            color: var(--accent-warning);
+        }
+
+        .confirm-btn.danger {
+            border-color: var(--accent-error);
+            color: var(--accent-error);
+        }
+
+        .confirm-btn.success {
+            border-color: var(--accent-success);
+            color: var(--accent-success);
+        }
     </style>
     <!-- Markdown 渲染库 -->
     <script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"></script>
@@ -659,18 +899,18 @@
 
                 <div class="mode-selector">
                     <div class="query-label">⚙️ 执行模式</div>
-                    <div class="mode-option active" data-mode="auto">
-                        <input type="radio" name="mode" id="modeAuto" value="auto" checked>
+                    <div class="mode-option" data-mode="auto">
+                        <input type="radio" name="mode" id="modeAuto" value="auto">
                         <label for="modeAuto">
                             <div>自动模式</div>
                             <div class="mode-desc">自动执行所有命令，无需确认</div>
                         </label>
                     </div>
-                    <div class="mode-option" data-mode="interactive">
-                        <input type="radio" name="mode" id="modeInteractive" value="interactive">
+                    <div class="mode-option active" data-mode="interactive">
+                        <input type="radio" name="mode" id="modeInteractive" value="interactive" checked>
                         <label for="modeInteractive">
                             <div>交互模式</div>
-                            <div class="mode-desc">每个命令执行前需要确认</div>
+                            <div class="mode-desc">每个命令执行前会弹出确认窗口</div>
                         </label>
                     </div>
                 </div>
@@ -700,6 +940,24 @@
 
             <!-- 主内容：Markdown 流式输出 -->
             <div class="main-content" id="mainContent">
+                <!-- 行内确认面板(modal 的双保险) -->
+                <div class="inline-confirm" id="inlineConfirm">
+                    <div class="inline-confirm-title">
+                        ⏸️ <span id="inlineConfirmTitle">等待用户确认执行命令</span>
+                    </div>
+                    <div id="inlineConfirmWarning" class="confirm-warning"></div>
+                    <div class="confirm-block-label">💻 即将执行的命令:</div>
+                    <div class="inline-confirm-cmd" id="inlineConfirmCmd">-</div>
+                    <textarea id="inlineConfirmEdit" class="confirm-edit-input" placeholder="可在此输入修改后的命令..."></textarea>
+                    <div class="inline-confirm-actions">
+                        <button class="confirm-btn primary" data-inline-action="execute">✅ 执行 (Y)</button>
+                        <button class="confirm-btn warning" data-inline-action="edit">📝 编辑 (E)</button>
+                        <button class="confirm-btn" data-inline-action="skip">⏭️ 跳过 (N)</button>
+                        <button class="confirm-btn success" data-inline-action="auto">🤖 全部自动 (A)</button>
+                        <button class="confirm-btn danger" data-inline-action="quit">❌ 退出 (Q)</button>
+                    </div>
+                </div>
+
                 <div class="stream-output" id="streamOutput">
                     <div class="stream-header">
                         <svg viewBox="0 0 24 24" fill="none">
@@ -747,6 +1005,45 @@
         </div>
     </div>
 
+    <!-- 命令确认 Modal -->
+    <div class="confirm-modal-mask" id="confirmModal">
+        <div class="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="confirmModalTitle">
+            <div class="confirm-modal-header">
+                <div class="confirm-modal-title" id="confirmModalTitle">
+                    🔐 需要确认执行命令
+                </div>
+                <div class="confirm-modal-step" id="confirmModalStep"></div>
+            </div>
+            <div class="confirm-modal-body">
+                <div id="confirmWarning" class="confirm-warning"></div>
+
+                <div>
+                    <div class="confirm-block-label">📋 任务说明</div>
+                    <div class="confirm-command-box" id="confirmDescription">-</div>
+                </div>
+
+                <div>
+                    <div class="confirm-block-label">💻 将要执行的命令</div>
+                    <div class="confirm-command-box" id="confirmCommand">-</div>
+                </div>
+
+                <div>
+                    <div class="confirm-block-label">✏️ 编辑后执行（点击「编辑」后填入新命令）</div>
+                    <textarea id="confirmEdit" class="confirm-edit-input" placeholder="在此输入修改后的命令，然后点击「执行编辑后命令」"></textarea>
+                </div>
+
+                <div class="confirm-meta" id="confirmMeta"></div>
+            </div>
+            <div class="confirm-modal-footer">
+                <button id="confirmBtnSkip" class="confirm-btn" data-action="skip">⏭️ 跳过 (N)</button>
+                <button id="confirmBtnEdit" class="confirm-btn warning" data-action="edit">📝 编辑 (E)</button>
+                <button id="confirmBtnAuto" class="confirm-btn" data-action="auto">🤖 全部自动 (A)</button>
+                <button id="confirmBtnQuit" class="confirm-btn danger" data-action="quit">❌ 退出 (Q)</button>
+                <button id="confirmBtnExecute" class="confirm-btn primary" data-action="execute">✅ 执行 (Y)</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // 配置 Marked
         if (typeof marked !== 'undefined') {
@@ -785,6 +1082,31 @@
                 this.closeSidebarBtn = document.getElementById('closeSidebarBtn');
                 this.clearReasoningBtn = document.getElementById('clearReasoningBtn');
 
+                // 命令确认 Modal
+                this.confirmModal = document.getElementById('confirmModal');
+                this.confirmModalStep = document.getElementById('confirmModalStep');
+                this.confirmDescription = document.getElementById('confirmDescription');
+                this.confirmCommand = document.getElementById('confirmCommand');
+                this.confirmEdit = document.getElementById('confirmEdit');
+                this.confirmWarning = document.getElementById('confirmWarning');
+                this.confirmMeta = document.getElementById('confirmMeta');
+                this.confirmBtnExecute = document.getElementById('confirmBtnExecute');
+                this.confirmBtnSkip = document.getElementById('confirmBtnSkip');
+                this.confirmBtnEdit = document.getElementById('confirmBtnEdit');
+                this.confirmBtnAuto = document.getElementById('confirmBtnAuto');
+                this.confirmBtnQuit = document.getElementById('confirmBtnQuit');
+
+                // 行内确认(modal 的双保险)
+                this.inlineConfirm = document.getElementById('inlineConfirm');
+                this.inlineConfirmTitle = document.getElementById('inlineConfirmTitle');
+                this.inlineConfirmWarning = document.getElementById('inlineConfirmWarning');
+                this.inlineConfirmCmd = document.getElementById('inlineConfirmCmd');
+                this.inlineConfirmEdit = document.getElementById('inlineConfirmEdit');
+
+                this.pendingConfirmation = null; // 当前等待确认的命令上下文
+                this.confirmInBusy = false;
+                this.autoModeOverride = false;   // 用户中途切换到自动模式的本地标记
+
                 this.getSelectedMode = () => {
                     const autoRadio = document.getElementById('modeAuto');
                     return autoRadio && autoRadio.checked ? 'auto' : 'interactive';
@@ -812,6 +1134,78 @@
                         document.querySelectorAll('.mode-option').forEach(o => o.classList.remove('active'));
                         opt.classList.add('active');
                     });
+                });
+
+                // ==== 行内确认按钮 ====
+                document.querySelectorAll('[data-inline-action]').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const action = btn.getAttribute('data-inline-action');
+                        if (action === 'edit') {
+                            if (!this.inlineConfirmEdit.classList.contains('visible')) {
+                                this.inlineConfirmEdit.classList.add('visible');
+                                if (!this.inlineConfirmEdit.value) {
+                                    this.inlineConfirmEdit.value = (this.pendingConfirmation && this.pendingConfirmation.command) || '';
+                                }
+                                this.inlineConfirmEdit.focus();
+                                btn.textContent = '🚀 执行编辑后命令';
+                                return;
+                            }
+                            this.handleConfirmAction('edit', this.inlineConfirmEdit.value);
+                        } else {
+                            this.handleConfirmAction(action);
+                        }
+                    });
+                });
+
+                // ==== 确认 Modal 事件 ====
+                this.confirmBtnExecute.addEventListener('click', () => this.handleConfirmAction('execute'));
+                this.confirmBtnSkip.addEventListener('click', () => this.handleConfirmAction('skip'));
+                this.confirmBtnAuto.addEventListener('click', () => this.handleConfirmAction('auto'));
+                this.confirmBtnQuit.addEventListener('click', () => this.handleConfirmAction('quit'));
+                this.confirmBtnEdit.addEventListener('click', () => {
+                    // 第一次点击展开输入框, 第二次点击触发 edit 提交
+                    if (!this.confirmEdit.classList.contains('visible')) {
+                        this.confirmEdit.classList.add('visible');
+                        if (!this.confirmEdit.value) {
+                            this.confirmEdit.value = (this.pendingConfirmation && this.pendingConfirmation.command) || '';
+                        }
+                        this.confirmEdit.focus();
+                        this.confirmBtnEdit.textContent = '🚀 执行编辑后命令';
+                        return;
+                    }
+                    this.handleConfirmAction('edit');
+                });
+
+                // 键盘快捷键: Y/N/E/A/Q (modal 打开时生效)
+                document.addEventListener('keydown', (e) => {
+                    if (!this.confirmModal.classList.contains('active')) return;
+                    if (this.confirmInBusy) return;
+                    // 编辑框输入中: 仅响应 Esc 和 Ctrl+Enter
+                    const isTyping = document.activeElement === this.confirmEdit;
+                    if (isTyping) {
+                        if (e.key === 'Escape') {
+                            this.confirmEdit.blur();
+                            e.preventDefault();
+                        } else if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                            this.handleConfirmAction('edit');
+                            e.preventDefault();
+                        }
+                        return;
+                    }
+                    const key = (e.key || '').toLowerCase();
+                    if (key === 'y') { this.handleConfirmAction('execute'); e.preventDefault(); }
+                    else if (key === 'n') { this.handleConfirmAction('skip'); e.preventDefault(); }
+                    else if (key === 'a') { this.handleConfirmAction('auto'); e.preventDefault(); }
+                    else if (key === 'q') { this.handleConfirmAction('quit'); e.preventDefault(); }
+                    else if (key === 'e') {
+                        this.confirmEdit.classList.add('visible');
+                        if (!this.confirmEdit.value) {
+                            this.confirmEdit.value = (this.pendingConfirmation && this.pendingConfirmation.command) || '';
+                        }
+                        this.confirmEdit.focus();
+                        this.confirmBtnEdit.textContent = '🚀 执行编辑后命令';
+                        e.preventDefault();
+                    }
                 });
             }
 
@@ -1015,6 +1409,17 @@
                         displayContent = `生成最终报告`;
                         break;
 
+                    case 'confirm_required':
+                        stepClass = 'replan';
+                        badgeText = '⏸️ 等待确认';
+                        displayContent = `等待用户确认命令 [步骤 ${eventData.step_index || '?'}/${eventData.total_steps || '?'}]: <code>${this.escapeHtml((eventData.command || '').substring(0, 100))}</code>`;
+                        if (eventData.dangerous) {
+                            displayContent += `<br><span style="color: var(--accent-error);">⚠️ 危险命令</span>`;
+                        } else if (eventData.warning) {
+                            displayContent += `<br><span style="color: var(--accent-warning);">${this.escapeHtml(eventData.warning)}</span>`;
+                        }
+                        break;
+
                     case 'complete':
                         stepClass = 'report';
                         badgeText = '✅ 完成';
@@ -1091,6 +1496,173 @@
                 }
             }
 
+            // ==== 确认 Modal 控制 ====
+            showConfirmModal(eventData) {
+                // 给每个事件打一个本地 ID, 用于竞态守护
+                const evt = eventData || {};
+                evt._localId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+                this.pendingConfirmation = evt;
+                console.log('[CLI Confirm] 收到 confirm_required 事件:', evt);
+
+                const stepIdx = eventData.step_index || '?';
+                const total = eventData.total_steps || '?';
+                this.confirmModalStep.textContent = `步骤 ${stepIdx} / ${total}`;
+
+                const cmd = eventData.command || '';
+                this.confirmCommand.textContent = cmd ? `PS> ${cmd}` : '(空命令)';
+                this.confirmDescription.textContent = eventData.step_description || '(本步骤无附加说明)';
+
+                this.confirmEdit.value = '';
+                this.confirmEdit.classList.remove('visible');
+                this.confirmBtnEdit.textContent = '📝 编辑 (E)';
+
+                this.confirmWarning.classList.remove('visible', 'dangerous');
+                if (eventData.warning) {
+                    this.confirmWarning.textContent = eventData.warning + (eventData.dangerous ? '\n此操作可能造成不可逆的影响！' : '');
+                    this.confirmWarning.classList.add('visible');
+                    if (eventData.dangerous) {
+                        this.confirmWarning.classList.add('dangerous');
+                    }
+                }
+
+                const metaPieces = [];
+                if (eventData.skill_display_name || eventData.matched_skill) {
+                    metaPieces.push(`<span class="confirm-meta-item"><strong>Skill:</strong> ${this.escapeHtml(eventData.skill_display_name || eventData.matched_skill)}</span>`);
+                }
+                if (eventData.skill_risk_level) {
+                    metaPieces.push(`<span class="confirm-meta-item"><strong>风险:</strong> ${this.escapeHtml(eventData.skill_risk_level)}</span>`);
+                }
+                if (eventData.session_id) {
+                    metaPieces.push(`<span class="confirm-meta-item"><strong>会话:</strong> ${this.escapeHtml(eventData.session_id)}</span>`);
+                }
+                this.confirmMeta.innerHTML = metaPieces.join('');
+
+                this.confirmInBusy = false;
+                this.setConfirmButtonsDisabled(false);
+                this.confirmModal.classList.add('active');
+
+                // 同步显示行内确认面板(双保险)
+                this.showInlineConfirm(eventData);
+            }
+
+            showInlineConfirm(eventData) {
+                if (!this.inlineConfirm) return;
+                const stepIdx = eventData.step_index || '?';
+                const total = eventData.total_steps || '?';
+                this.inlineConfirmTitle.textContent = `等待用户确认 [步骤 ${stepIdx}/${total}]`;
+                this.inlineConfirmCmd.textContent = eventData.command || '(空命令)';
+
+                // 警告
+                this.inlineConfirmWarning.classList.remove('visible', 'dangerous');
+                if (eventData.warning) {
+                    this.inlineConfirmWarning.textContent = eventData.warning + (eventData.dangerous ? '\n此操作可能造成不可逆的影响！' : '');
+                    this.inlineConfirmWarning.classList.add('visible');
+                    if (eventData.dangerous) this.inlineConfirmWarning.classList.add('dangerous');
+                }
+
+                this.inlineConfirmEdit.value = '';
+                this.inlineConfirmEdit.classList.remove('visible');
+                const editBtn = this.inlineConfirm.querySelector('[data-inline-action="edit"]');
+                if (editBtn) editBtn.textContent = '📝 编辑 (E)';
+
+                this.inlineConfirm.classList.add('visible');
+                this.inlineConfirm.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+
+            hideConfirmModal() {
+                this.confirmModal.classList.remove('active');
+                if (this.inlineConfirm) this.inlineConfirm.classList.remove('visible');
+                this.pendingConfirmation = null;
+                this.confirmInBusy = false;
+            }
+
+            setConfirmButtonsDisabled(disabled) {
+                [
+                    this.confirmBtnExecute,
+                    this.confirmBtnSkip,
+                    this.confirmBtnEdit,
+                    this.confirmBtnAuto,
+                    this.confirmBtnQuit,
+                ].forEach(btn => { if (btn) btn.disabled = disabled; });
+            }
+
+            async handleConfirmAction(action, editedFromInline) {
+                if (!this.pendingConfirmation || this.confirmInBusy) return;
+
+                // 「全部自动」需要二次确认, 避免误点导致后续命令不再询问
+                if (action === 'auto') {
+                    const ok = window.confirm(
+                        '⚠️ 切换到「自动模式」后, 剩余所有命令将不再询问就直接执行。\n' +
+                        '确定要继续吗?\n\n' +
+                        '点「取消」回到交互模式, 继续逐条确认。'
+                    );
+                    if (!ok) return;
+                }
+
+                let editedCommand = null;
+                if (action === 'edit') {
+                    const fromInline = (editedFromInline ?? this.inlineConfirmEdit?.value ?? '').trim();
+                    const fromModal = (this.confirmEdit.value || '').trim();
+                    editedCommand = fromInline || fromModal;
+                    if (!editedCommand) {
+                        this.showNotification('请输入编辑后的命令', 'warning');
+                        (this.inlineConfirmEdit?.classList.contains('visible') ? this.inlineConfirmEdit : this.confirmEdit).focus();
+                        return;
+                    }
+                }
+
+                // 记录本次确认的标识(用于竞态守护: 防止后续 confirm_required 已到达时误关 modal)
+                const submittingId = this.pendingConfirmation._localId;
+
+                this.confirmInBusy = true;
+                this.setConfirmButtonsDisabled(true);
+
+                const payload = {
+                    session_id: this.pendingConfirmation.session_id || this.sessionId,
+                    action,
+                };
+                if (editedCommand) payload.edited_command = editedCommand;
+
+                try {
+                    const resp = await fetch(`${this.apiBaseUrl}/cli/confirm`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload),
+                    });
+                    const data = await resp.json().catch(() => ({}));
+                    if (!resp.ok || data.success === false) {
+                        throw new Error(data.message || `HTTP ${resp.status}`);
+                    }
+                    // 用户切到了自动模式 → 永久关闭确认 UI
+                    if (action === 'auto') {
+                        this.autoModeOverride = true;
+                        this.updateModeIndicator('auto');
+                        this.hideConfirmModal();
+                        return;
+                    }
+                    // 竞态守护: 只有在没有新 confirm 顶上来时, 才隐藏 modal
+                    if (this.pendingConfirmation && this.pendingConfirmation._localId === submittingId) {
+                        this.hideConfirmModal();
+                    } else {
+                        // 已经有下一条命令的 confirm_required 到达 → 不要关, 只解锁按钮
+                        this.confirmInBusy = false;
+                        this.setConfirmButtonsDisabled(false);
+                    }
+                } catch (err) {
+                    console.error('提交命令确认失败:', err);
+                    this.showNotification('提交确认失败: ' + err.message, 'error');
+                    this.confirmInBusy = false;
+                    this.setConfirmButtonsDisabled(false);
+                }
+            }
+
+            updateModeIndicator(mode) {
+                // mode: 'interactive' 或 'auto'
+                const text = mode === 'auto' ? '🤖 自动模式(不再询问)' : '🔐 交互模式(逐条询问)';
+                this.statusText.textContent = text;
+                this.statusDot.className = mode === 'auto' ? 'status-dot success' : 'status-dot running';
+            }
+
             async executeCLI() {
                 if (this.isExecuting) {
                     this.showNotification('请等待当前执行完成', 'warning');
@@ -1104,6 +1676,10 @@
                 }
 
                 const mode = this.getSelectedMode();
+                // 新任务开始, 重置中途切换的自动模式标记 + 重新生成 sessionId
+                this.autoModeOverride = false;
+                this.sessionId = this.generateSessionId();
+                this.updateModeIndicator(mode === 'auto' ? 'auto' : 'interactive');
                 this.isExecuting = true;
                 this.executeBtn.disabled = true;
                 this.updateStatus('执行中...', true);
@@ -1148,6 +1724,8 @@
                             try {
                                 const event = JSON.parse(dataStr);
 
+                                console.log('[CLI SSE]', event.type, event);
+
                                 // 添加到推理侧边栏
                                 this.addReasoningStep(event);
 
@@ -1164,9 +1742,35 @@
                                         this.updateStreamContent(lastReportContent, false);
                                     }
                                     this.updateStatus('完成', false);
+                                    // 任务结束时关闭可能残留的 modal
+                                    if (this.confirmModal.classList.contains('active')) {
+                                        this.hideConfirmModal();
+                                    }
                                 } else if (event.type === 'error') {
                                     this.updateStreamContent(`**❌ 错误:** ${event.message}`, false);
                                     this.updateStatus('错误', false);
+                                    if (this.confirmModal.classList.contains('active')) {
+                                        this.hideConfirmModal();
+                                    }
+                                } else if (event.type === 'confirm_required') {
+                                    // 弹出命令确认 modal, 由用户回填到 /cli/confirm 后流程才会继续
+                                    // ⚠️ 即便上一条 confirm 还在 busy 状态, 也要立刻切到新的 event,
+                                    //    确保每条命令都进入「等待确认」UI
+                                    if (this.autoModeOverride) {
+                                        // 用户已经主动切到自动模式, 但后端如果还在交互模式补发 confirm,
+                                        // 这里直接放行(不太可能发生, 但作为防御)
+                                        console.warn('[CLI] confirm_required arrived after autoModeOverride');
+                                    }
+                                    this.updateStatus('等待确认', true);
+                                    this.showConfirmModal(event);
+                                } else if (event.type === 'execution') {
+                                    // 命令已经执行了, 状态回到执行中
+                                    this.updateStatus('执行中...', true);
+                                    // 如果还有 modal/inline 残留(上一条命令的), 关掉
+                                    if (this.confirmModal.classList.contains('active') ||
+                                        (this.inlineConfirm && this.inlineConfirm.classList.contains('visible'))) {
+                                        this.hideConfirmModal();
+                                    }
                                 }
                             } catch (e) {
                                 console.warn('解析事件失败:', dataStr, e);
@@ -1183,6 +1787,9 @@
                     this.updateStreamContent(`**❌ 执行失败:** ${error.message}`, false);
                     this.updateStatus('错误', false);
                     this.showNotification('执行失败: ' + error.message, 'error');
+                    if (this.confirmModal.classList.contains('active')) {
+                        this.hideConfirmModal();
+                    }
                 } finally {
                     this.isExecuting = false;
                     this.executeBtn.disabled = false;

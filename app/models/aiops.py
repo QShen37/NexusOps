@@ -15,12 +15,17 @@ class AIOpsRequest(BaseModel):
         default=None,
         description="自然语言任务描述；为空时由服务端使用默认巡检提示"
     )
+    auto_mode: Optional[bool] = Field(
+        default=False,
+        description="是否自动执行所有命令(跳过前端确认); 仅 CLI 接口生效"
+    )
 
     class Config:
         json_schema_extra = {
             "example": {
                 "session_id": "session-123",
-                "user_input": "请检查 CPU、内存与磁盘使用情况"
+                "user_input": "请检查 CPU、内存与磁盘使用情况",
+                "auto_mode": False,
             }
         }
 
