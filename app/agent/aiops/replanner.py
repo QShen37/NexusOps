@@ -26,7 +26,7 @@ class Act(BaseModel):
         description="""下一步的行动，必须是以下三种之一：
         - 'continue': 当前计划合理，继续执行下一个步骤
         - 'replan': 当前计划需要调整，提供新的步骤列表
-        - 'respond': 计划已完成且信息充足，生成最终响应"""
+        - 'respond': 计划已完成且信息充足，生成最终响应(如果)"""
     )
     # action 为 'replan' 时，新的步骤列表（会替换当前剩余计划）
     new_steps: List[str] = Field(
@@ -48,10 +48,16 @@ replanner_prompt = ChatPromptTemplate.from_messages(
 
                 注意：你的职责是制定或调整计划，实际的工具调用由 Executor 负责执行。
 
+                ⚠️ **强制要求（必须遵守）**：
+                - **至少执行 3 个步骤后才能考虑 'respond'**
+                - 如果已执行步骤 < 3，只能选择 'continue' 或 'replan'，不能选择 'respond'
+                - 这是系统的硬性约束，即使你认为信息已经充足也必须遵守
+
                 你有三个选择（按优先级排序）：
 
                 **1. 'respond' - 信息充足，立即生成最终响应** 【最高优先级】
                    - 使用场景：当前信息已经足够回答用户问题
+                   - **强制条件**：已执行步骤 >= 3 【必须满足】
                    - 决策标准：
                      * 已执行步骤 >= 3 且获取了关键信息
                      * 或者已执行步骤 >= 5（无论结果如何）
@@ -79,6 +85,7 @@ replanner_prompt = ChatPromptTemplate.from_messages(
                 **决策优先级口诀：** 
                 "优先结束 > 保持不变 > 调整计划"
                 "信息足够就响应，不要追求完美"
+                "至少三步才能结束，这是铁律"
             """).strip(),
         ),
         ("placeholder", "{messages}"),
@@ -112,20 +119,28 @@ async def replanner(state: PlanExecuteState) -> Dict[str, Any]:
     1. continue - 继续执行当前计划
     2. replan - 调整计划（替换剩余步骤）
     3. respond - 生成最终响应
+
+    ⚠️ 强制规则：必须至少执行 3 个步骤才能输出 respond
     """
     logger.info("=== Replanner：重新规划 ===")
 
     input_text = state.get("input", "")
     plan = state.get("plan", [])
     past_steps = state.get("past_steps", [])
+    executed_count = len(past_steps)
 
     logger.info(f"剩余计划步骤: {len(plan)}")
-    logger.info(f"已执行步骤: {len(past_steps)}")
+    logger.info(f"已执行步骤: {executed_count}")
 
-    # ⚠️ 强制限制：如果已执行步骤过多，直接生成响应
+    # ⚠️ 强制限制 1：如果已执行步骤 < 3，禁止 respond
+    MIN_EXECUTED_STEPS = 3
+    if executed_count < MIN_EXECUTED_STEPS:
+        logger.info(f"⚠️ 强制要求：已执行 {executed_count} 个步骤 < {MIN_EXECUTED_STEPS}，禁止 respond，必须继续执行")
+
+    # ⚠️ 强制限制 2：如果已执行步骤过多，直接生成响应
     MAX_STEP = 8
-    if len(past_steps) > MAX_STEP:
-        logger.warning(f"已执行 {len(past_steps)} 个步骤，超过最大限制 {MAX_STEP}，强制生成最终响应")
+    if executed_count > MAX_STEP:
+        logger.warning(f"已执行 {executed_count} 个步骤，超过最大限制 {MAX_STEP}，强制生成最终响应")
         llm = ChatDeepSeek(
             model=config.rag_model,
             api_key=config.DEEPSEEK_API_KEY,
@@ -175,12 +190,18 @@ async def replanner(state: PlanExecuteState) -> Dict[str, Any]:
 
         replanner_chain = replanner_prompt | llm.with_structured_output(Act)
 
+        # 添加强制要求的提示信息
+        force_continue_hint = ""
+        if executed_count < MIN_EXECUTED_STEPS:
+            force_continue_hint = f"\n\n⚠️ **强制要求**：当前已执行 {executed_count} 个步骤，必须至少执行 {MIN_EXECUTED_STEPS} 个步骤才能生成响应。你只能选择 'continue' 或 'replan'，绝对不能选择 'respond'！"
+
         try:
             messages = [
                 ("user", f"原始任务: {input_text}"),
                 ("user", f"已执行的步骤:\n{steps_summary}"),
                 ("user", f"剩余计划: {', '.join(plan)}"),
-                ("user", f"⚠️ 重要提示：已执行 {len(past_steps)} 个步骤，请优先考虑是否信息已足够生成响应（respond）")
+                ("user", f"⚠️ 重要提示：已执行 {executed_count} 个步骤，请优先考虑是否信息已足够生成响应（respond）"),
+                ("user", f"⚠️ 强制要求：至少执行 {MIN_EXECUTED_STEPS} 个步骤才能 respond，当前为 {executed_count} 个步骤{force_continue_hint}")
             ]
 
             act = await replanner_chain.ainvoke({
@@ -199,9 +220,24 @@ async def replanner(state: PlanExecuteState) -> Dict[str, Any]:
 
             logger.info(f"Replanner 决策: {action}")
 
+            # ⚠️ 强制检查：如果已执行步骤 < 3 且决策是 respond，强制改为 continue
+            if action == "respond" and executed_count < MIN_EXECUTED_STEPS:
+                logger.warning(
+                    f"⚠️ 违反强制要求：已执行 {executed_count} 个步骤 < {MIN_EXECUTED_STEPS}，"
+                    f"决策 '{action}' 被强制改为 'continue'"
+                )
+                action = "continue"
+                logger.info("强制继续执行")
+
             if action == "respond":
-                logger.info("决定生成最终响应")
-                return await _generate_response(state, llm)
+                # 二次检查：确保已执行步骤 >= 3
+                if executed_count >= MIN_EXECUTED_STEPS:
+                    logger.info(f"决定生成最终响应（已执行 {executed_count} 个步骤，符合要求）")
+                    return await _generate_response(state, llm)
+                else:
+                    # 不应该走到这里，因为上面已经强制改过，但为了安全再检查一次
+                    logger.warning(f"⚠️ 异常：仍尝试 respond，但已执行步骤={executed_count}，强制改为 continue")
+                    return {}
             elif action == "replan":
                 # ⚠️ 强制限制：新步骤数不能超过当前剩余步骤数
                 if len(new_steps) > len(plan):
@@ -211,9 +247,9 @@ async def replanner(state: PlanExecuteState) -> Dict[str, Any]:
                     )
                     new_steps = new_steps[:len(plan)]
                 # ⚠️ 二次检查：如果已执行步骤 >= 5，禁止 replan
-                if len(past_steps) >= 5:
-                    logger.warning(f"已执行 {len(past_steps)} 个步骤，禁止重新规划，强制生成响应")
-                    return await _generate_response(state, llm)
+                if executed_count >= 5:
+                    logger.warning(f"已执行 {executed_count} 个步骤，禁止重新规划，强制继续执行")
+                    return {}
 
                 logger.info(f"决定调整计划，新步骤数量: {len(new_steps)}")
                 if new_steps:
@@ -232,9 +268,23 @@ async def replanner(state: PlanExecuteState) -> Dict[str, Any]:
             return {}
 
     else:
-        # 没有剩余计划，生成最终响应
-        logger.info("计划已执行完毕，生成最终响应")
-        return await _generate_response(state, llm)
+        # 没有剩余计划
+        # ⚠️ 强制检查：即使没有剩余计划，也必须执行至少 3 个步骤才能响应
+        if executed_count >= MIN_EXECUTED_STEPS:
+            logger.info(f"计划已执行完毕，已执行 {executed_count} 个步骤，生成最终响应")
+            return await _generate_response(state, llm)
+        else:
+            # 执行步骤不足，不能结束，需要生成新计划
+            logger.warning(
+                f"计划已执行完毕，但只执行了 {executed_count} 个步骤 < {MIN_EXECUTED_STEPS}，"
+                f"需要继续规划新步骤"
+            )
+            # 返回空字典让 graph 继续，但因为没有计划，需要 planner 生成新计划
+            # 这里可以触发一个 replan 信号
+            # 生成一个简单的继续计划
+            fallback_plan = [f"继续收集相关信息来回答: {input_text}"]
+            logger.info(f"生成后备计划: {fallback_plan}")
+            return {"plan": fallback_plan}
 
 
 async def _generate_response(state: PlanExecuteState, llm: ChatDeepSeek) -> Dict[str, Any]:
@@ -243,6 +293,15 @@ async def _generate_response(state: PlanExecuteState, llm: ChatDeepSeek) -> Dict
 
     input_text = state.get("input", "")
     past_steps = state.get("past_steps", [])
+    executed_count = len(past_steps)
+
+    # 安全检查：确保至少执行了 3 个步骤
+    MIN_EXECUTED_STEPS = 3
+    if executed_count < MIN_EXECUTED_STEPS:
+        logger.error(f"❌ 严重错误：尝试生成响应但只执行了 {executed_count} 个步骤 < {MIN_EXECUTED_STEPS}")
+        return {
+            "response": f"⚠️ 系统提示：当前已执行 {executed_count} 个步骤，但系统要求至少执行 {MIN_EXECUTED_STEPS} 个步骤才能生成完整响应。请继续执行更多任务。"
+        }
 
     # 格式化执行历史
     execution_history = "\n\n".join([
@@ -279,7 +338,7 @@ async def _generate_response(state: PlanExecuteState, llm: ChatDeepSeek) -> Dict
             ## 原始任务
             {input_text}
         
-            ## 执行的步骤
+            ## 执行的步骤（共 {executed_count} 个）
             {_format_simple_steps(past_steps)}
         
             ## 说明
