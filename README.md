@@ -139,7 +139,7 @@ python -m uvicorn app.main:app --host 127.0.0.1 --port 9900
 ```
 
 ## 注意事项
-- 运行前需在`config/`目录配置相关参数（主要是API）
+- 运行前需在`config_template.py`配置相关参数并且修改名字为`config.py`（主要是API）
 - 数据文件需放置在指定目录或者根据页面交互上传
 
 ## 待办事项
