@@ -125,17 +125,17 @@ conda activate nexus_ops
 pip install -r requirement.txt
 ```
 
-4. **执行方式**
+4. **执行方式（一键启动/关闭）**
 ```bash
-# 启动3个server
-python .\mcp_server\cls_server.py
-python .\mcp_server\monitor_server.py
-python .\mcp_server\system_server.py
+# 一键启动服务
 
-# 在9900端口启动交互界面
+.\manager\start.bat
 python -m uvicorn app.main:app --host 127.0.0.1 --port 9900
 
 # 打开浏览器访问：http://127.0.0.1:9900
+
+# 一键关闭服务（需自行关闭端口）
+.\manager\stop.bat
 ```
 
 ## 注意事项
@@ -145,4 +145,3 @@ python -m uvicorn app.main:app --host 127.0.0.1 --port 9900
 ## 待办事项
 - 将cli确认转移到前端
 - skills实现
-- 实现一个一键启动的bat文件
