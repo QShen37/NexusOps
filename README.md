@@ -1,4 +1,4 @@
-# NexusOps
+# NexusOps（更新中...）
 
 > 面向智能运维的多智能体 Agent 框架
 
@@ -119,7 +119,6 @@ conda create -n nexus_ops python=3.13
 conda activate nexus_ops
 ```
 
-
 3. **安装依赖**
 ```bash
 pip install -r requirement.txt
@@ -142,8 +141,107 @@ python -m uvicorn app.main:app --host 127.0.0.1 --port 9900
 - 运行前需在`config_template.py`配置相关参数并且修改名字为`config.py`（主要是API）
 - 数据文件需放置在指定目录或者根据页面交互上传
 
+## 🎯 RAG 系统评测
+
+本项目集成了完整的 RAG 评测系统（基于 Ragas 框架），支持 6 个核心指标的自动化评测。
+
+### 快速评测
+
+```bash
+# 1. 安装评测依赖
+pip install -r app/services/ragas_requirements.txt
+
+# 2. 运行快速评测（使用 10 个预设问题）
+python run_quick_eval.py
+```
+
+### 评测指标
+
+- **Faithfulness** (忠实度): 答案是否基于检索到的上下文
+```bash
+# 步骤1: 从答案中提取核心主张
+claims = [
+    "CPU使用率过高需要先获取当前时间",
+    "然后查询系统日志",
+    "分析CPU消耗进程", 
+    "常见原因是死循环或流量突增"
+]
+
+# 步骤2: 逐条验证是否能从上下文推断
+supported = 0
+for claim in claims:
+    prompt = f"上下文: {context}\n主张: {claim}\n这个主张能从上下文中推断出来吗？回答是/否"
+    if llm_response == "是":
+        supported += 1
+
+# 步骤3: 计算比例
+faithfulness = supported / len(claims) = 4/4 = 1.0
+```
+- **Answer Relevancy** (相关性): 答案是否直接回答问题
+```bash
+# 步骤1: 使用语义模型计算相似度
+from sentence_transformers import SentenceTransformer
+model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
+
+question_embedding = model.encode("CPU使用率过高告警如何排查？")
+answer_embedding = model.encode("CPU使用率过高需要先获取当前时间，然后查询系统日志...")
+
+# 步骤2: 计算余弦相似度
+similarity = cosine_similarity([question_embedding], [answer_embedding])[0][0]
+# 结果: 0.72
+```
+- **Context Recall** (召回率): 检索到的上下文完整性
+```bash
+# 步骤1: 从标准答案中提取核心信息
+ground_truth_claims = [
+    "获取当前时间",
+    "查询系统日志", 
+    "分析CPU消耗进程",
+    "死循环或流量突增原因"
+]
+
+# 步骤2: 检查每个信息是否在上下文中
+found = 0
+for claim in ground_truth_claims:
+    if claim in context_text:  # 或 LLM 判断
+        found += 1
+
+context_recall = found / len(ground_truth_claims) = 4/4 = 1.0
+```
+- **Answer Similarity** (相似度): 答案与标准答案的语义相似度
+```bash
+# 使用 Sentence-BERT 语义模型
+from sentence_transformers import SentenceTransformer
+from sklearn.metrics.pairwise import cosine_similarity
+
+model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
+
+answer_emb = model.encode("CPU使用率过高需要先获取当前时间，然后查询系统日志...")
+gt_emb = model.encode("CPU使用率过高告警处理方案：1. 获取当前时间...")
+
+similarity = cosine_similarity([answer_emb], [gt_emb])[0][0]
+# 结果: 0.82
+```
+
+
+```bash
+  📊 评估对比汇总
+══════════════════════════════════════════════════════════════════════
+  指标                             基础 RAG      增强 RAG        提升
+──────────────────────────────────────────────────────────────────────
+  faithfulness                     0.9111       0.9221       ↑ 0.0110
+  answer_relevancy                 0.7514       0.7549       ↑ 0.0035
+  context_recall                   0.8444       0.9157       ↑ 0.0713
+  answer_similarity                0.7949       0.8076       ↑ 0.0127
+══════════════════════════════════════════════════════════════════════
+
+```
+
+---
+
 ## 待办事项
-- rag添加rewrite和hybrid混合索引以及ragas测评
-- rag添加图片以及pdf检索
-- ~~将cli确认转移到前端~~
+- ~~rag添加rewrite和hybrid混合索引~~
+- rag添加图片以及pdf上传（预防pdf是图片扫描版本）功能
+- ~~rag添加ragas测评（已完成）~~
+- ~~将cli确认转移到前端（已完成）~~
 - ~~skills实现（已完成）~~

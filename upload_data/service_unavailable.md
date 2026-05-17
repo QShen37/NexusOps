@@ -1,4 +1,4 @@
-# 服务不可用告警处理方案
+_# 服务不可用告警处理方案
 
 ## 告警名称
 - **告警名**: `ServiceUnavailable`
@@ -286,4 +286,4 @@
 ## 参考文档
 - [应急响应流程](internal-docs/emergency-response.md)
 - [故障处理手册](internal-docs/incident-handbook.md)
-- [高可用架构设计](internal-docs/ha-architecture.md)
+- [高可用架构设计](internal-docs/ha-architecture.md)_
